@@ -47,6 +47,19 @@ jobs:
           mkdir -p android/app/src/main/kotlin/com/example/survey_app
           cp native/MainActivity.kt android/app/src/main/kotlin/com/example/survey_app/MainActivity.kt
       - run: flutter pub get
+      - name: Force all plugins to compile against Android API 36
+        run: |
+          mkdir -p ~/.gradle/init.d
+          cat > ~/.gradle/init.d/force-compile-sdk.gradle <<'GRADLE'
+          allprojects {
+            afterEvaluate { p ->
+              if (p.hasProperty('android')) {
+                try { p.android.compileSdk = 36 } catch (Throwable e) { println "compileSdk override skipped for ${p.name}: ${e.message}" }
+              }
+            }
+          }
+          GRADLE
+          cat ~/.gradle/init.d/force-compile-sdk.gradle
       - run: flutter build apk --release
       - uses: actions/upload-artifact@v4
         with:
