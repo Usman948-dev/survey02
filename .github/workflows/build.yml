@@ -14,9 +14,26 @@ jobs:
       - uses: subosito/flutter-action@v2
         with:
           channel: stable
+      - name: Arrange files (works even if uploaded flat)
+        run: |
+          mkdir -p lib native
+          if [ ! -f lib/main.dart ]; then
+            f=$(find . -name main.dart -not -path './android/*' -not -path './.dart_tool/*' | head -1)
+            [ -n "$f" ] || { echo "ERROR: main.dart not found in repo"; exit 1; }
+            mv "$f" lib/main.dart
+          fi
+          if [ ! -f native/MainActivity.kt ]; then
+            f=$(find . -name MainActivity.kt -not -path './android/*' | head -1)
+            [ -n "$f" ] || { echo "ERROR: MainActivity.kt not found in repo"; exit 1; }
+            mv "$f" native/MainActivity.kt
+          fi
+          [ -f pubspec.yaml ] || { echo "ERROR: pubspec.yaml must be at the top level of the repo"; exit 1; }
+          cp lib/main.dart "$RUNNER_TEMP/main.dart.bak"
+          echo "Layout OK:"; ls -R lib native
       - run: flutter create --platforms=android --project-name survey_app --org com.example .
       - name: Patch Android (permissions, label, native SIM channel)
         run: |
+          cp "$RUNNER_TEMP/main.dart.bak" lib/main.dart
           python3 - <<'PY'
           import re
           p='android/app/src/main/AndroidManifest.xml'
